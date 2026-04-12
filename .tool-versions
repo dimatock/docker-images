@@ -1,0 +1,5 @@
+# .tool-versions
+# See https://mise.jdx.dev/ for more information
+
+golang 1.26.2
+nodejs 22
