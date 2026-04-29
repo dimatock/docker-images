@@ -1,5 +1,5 @@
 # Использование стабильного базового образа
-FROM ubuntu:24.04
+FROM ubuntu:26.04
 
 # Установка переменных окружения для non-interactive установки
 ENV DEBIAN_FRONTEND=noninteractive
