@@ -65,5 +65,3 @@ RUN echo '\n# Mise and Starship configuration' >> /home/$USER_NAME/.zshrc && \
 
 # Указываем, что будем использовать zsh по умолчанию
 CMD ["/bin/zsh"]
-
-CMD ["/bin/zsh"]
