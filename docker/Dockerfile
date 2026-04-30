@@ -1,11 +1,15 @@
 # Использование стабильного базового образа
 FROM ubuntu:26.04
 
+# Использование стабильного базового образа
+FROM ubuntu:26.04
+
 # Установка переменных окружения для non-interactive установки
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
 
-# Add arguments for user and group IDs
+# Add arguments for user, group IDs, and username
+ARG USER_NAME=dev
 ARG USER_UID=1000
 ARG USER_GID=1000
 
@@ -22,11 +26,11 @@ RUN apt-get update && apt-get install -y \
     fd-find \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Создание non-root пользователя 'dev' с доступом к sudo
-RUN groupadd -g $USER_GID dev && useradd -u $USER_UID -g $USER_GID -m -s /bin/zsh -G sudo dev
-RUN echo "dev ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-USER dev
-WORKDIR /home/dev
+# Создание non-root пользователя с доступом к sudo
+RUN groupadd -g $USER_GID $USER_NAME && useradd -u $USER_UID -g $USER_GID -m -s /bin/zsh -d /home/$USER_NAME $USER_NAME && usermod -aG sudo $USER_NAME
+RUN echo "$USER_NAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+USER $USER_NAME
+WORKDIR /home/$USER_NAME
 
 
 # Установка Neovim
@@ -49,15 +53,17 @@ RUN LG_VERSION="0.61.0" && \
 USER root
 RUN curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
 RUN curl -sS https://starship.rs/install.sh | sh -s -- --yes
-USER dev
+USER $USER_NAME
 
 # Настройка shell
-RUN mkdir -p /home/dev/.config
-COPY docker/starship.toml /home/dev/.config/starship.toml
+RUN mkdir -p /home/$USER_NAME/.config
+COPY docker/starship.toml /home/$USER_NAME/.config/starship.toml
 
-RUN echo '\n# Mise and Starship configuration' >> /home/dev/.zshrc && \
-    echo 'eval "$(/usr/local/bin/mise activate zsh)"' >> /home/dev/.zshrc && \
-    echo 'eval "$(starship init zsh)"' >> /home/dev/.zshrc
+RUN echo '\n# Mise and Starship configuration' >> /home/$USER_NAME/.zshrc && \
+    echo 'eval "$(/usr/local/bin/mise activate zsh)"' >> /home/$USER_NAME/.zshrc && \
+    echo 'eval "$(starship init zsh)"' >> /home/$USER_NAME/.zshrc
 
 # Указываем, что будем использовать zsh по умолчанию
+CMD ["/bin/zsh"]
+
 CMD ["/bin/zsh"]
