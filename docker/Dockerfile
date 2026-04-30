@@ -5,6 +5,10 @@ FROM ubuntu:26.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
 
+# Add arguments for user and group IDs
+ARG USER_UID=1000
+ARG USER_GID=1000
+
 # Установка основных зависимостей и утилит
 RUN apt-get update && apt-get install -y \
     sudo \
@@ -19,7 +23,7 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Создание non-root пользователя 'dev' с доступом к sudo
-RUN useradd -m -s /bin/zsh -G sudo dev
+RUN groupadd -g $USER_GID dev && useradd -u $USER_UID -g $USER_GID -m -s /bin/zsh -G sudo dev
 RUN echo "dev ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 USER dev
 WORKDIR /home/dev
