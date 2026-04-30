@@ -27,8 +27,25 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Создание non-root пользователя с доступом к sudo
-RUN groupadd -g $USER_GID $USER_NAME && useradd -u $USER_UID -g $USER_GID -m -s /bin/zsh -d /home/$USER_NAME $USER_NAME && usermod -aG sudo $USER_NAME
-RUN echo "$USER_NAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+# Ensure any user with conflicting UID is removed
+RUN if getent passwd $USER_UID; then \
+        EXISTING_USER=$(getent passwd $USER_UID | cut -d: -f1); \
+        echo "Deleting user $EXISTING_USER (UID $USER_UID) to avoid conflict."; \
+        deluser --remove-home $EXISTING_USER; \
+    fi; \
+# Ensure any group with conflicting GID is removed if its name is not $USER_NAME
+    if getent group $USER_GID && [ "$(getent group $USER_GID | cut -d: -f1)" != "$USER_NAME" ]; then \
+        EXISTING_GROUP=$(getent group $USER_GID | cut -d: -f1); \
+        echo "Deleting group $EXISTING_GROUP (GID $USER_GID) to avoid conflict."; \
+        delgroup $EXISTING_GROUP; \
+    fi; \
+# Create group if it doesn't exist
+    if ! getent group $USER_GID; then groupadd -g $USER_GID $USER_NAME; else echo "Group for GID $USER_GID exists."; fi; \
+# Create user with specified UID, GID, home directory, shell
+    useradd -u $USER_UID -g $USER_GID -m -s /bin/zsh -d /home/$USER_NAME $USER_NAME; \
+# Add user to sudoers
+    usermod -aG sudo $USER_NAME && \
+    echo "$USER_NAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 USER $USER_NAME
 WORKDIR /home/$USER_NAME
 
