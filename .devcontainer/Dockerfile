@@ -82,12 +82,13 @@ RUN ARCH=$(uname -m) && \
         install -m 0755 /tmp/docker/docker /usr/local/bin/docker && \
         rm -rf /tmp/docker /tmp/docker.tgz
 
-# Docker Compose v2 plugin
+# Docker Compose v2 plugin + symlink для legacy `docker-compose` вызовов
 RUN ARCH=$(uname -m) && \
         mkdir -p /usr/local/lib/docker/cli-plugins && \
         curl -fsSL -o /usr/local/lib/docker/cli-plugins/docker-compose \
             "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-${ARCH}" && \
-        chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+        chmod +x /usr/local/lib/docker/cli-plugins/docker-compose && \
+        ln -sf /usr/local/lib/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
 
 # mise (pinned). Установщик скачивается с mise.run — версия фиксирована через MISE_VERSION.
 # Замечание: установщик исполняется через `sh`. Если боитесь supply-chain compromise — замените
