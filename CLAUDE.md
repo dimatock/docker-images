@@ -30,7 +30,11 @@ Three coupled pieces that must be edited together:
 
 ### Pinned versions
 
-All upstream artifacts are version-pinned in the Dockerfile via `ARG`: `NVIM_VERSION`, `LAZYGIT_VERSION`, `MISE_VERSION`, `STARSHIP_VERSION`. The base image is pinned by digest. Bump intentionally; don't switch to `stable` / `latest` tags.
+All upstream artifacts are version-pinned in the Dockerfile via `ARG`: `NVIM_VERSION`, `LAZYGIT_VERSION`, `MISE_VERSION`, `STARSHIP_VERSION`, `DOCKER_VERSION`, `COMPOSE_VERSION`. The base image is pinned by digest. Bump intentionally; don't switch to `stable` / `latest` tags.
+
+### Docker-from-docker
+
+The image contains only the Docker **CLI** + Compose v2 plugin — no daemon. `devcontainer.json` bind-mounts `/var/run/docker.sock` from the host, so `docker` / `docker compose` commands run against the host's daemon. `postStartCommand` detects the socket GID at start time and either creates a matching `docker` group (Linux host) or chmods to 666 (macOS Docker Desktop, where socket is root:root inside the VM). New shells pick up the group membership; the original postStart shell won't.
 
 ### Supply-chain note
 

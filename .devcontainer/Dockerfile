@@ -15,6 +15,8 @@ ARG NVIM_VERSION=0.12.2
 ARG LAZYGIT_VERSION=0.61.0
 ARG MISE_VERSION=v2026.5.6
 ARG STARSHIP_VERSION=v1.25.1
+ARG DOCKER_VERSION=29.4.2
+ARG COMPOSE_VERSION=v5.1.3
 
 # Базовые зависимости
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -70,6 +72,22 @@ RUN OS=$(uname -s | tr '[:upper:]' '[:lower:]') && \
         tar -xzf /tmp/lazygit.tar.gz -C /usr/local/bin lazygit && \
         chmod +x /usr/local/bin/lazygit && \
         rm -f /tmp/lazygit.tar.gz
+
+# Docker CLI (static binary, БЕЗ daemon — daemon должен быть на хосте,
+# /var/run/docker.sock пробрасывается через devcontainer.json mounts).
+RUN ARCH=$(uname -m) && \
+        curl -fsSL -o /tmp/docker.tgz \
+            "https://download.docker.com/linux/static/stable/${ARCH}/docker-${DOCKER_VERSION}.tgz" && \
+        tar -xzf /tmp/docker.tgz -C /tmp && \
+        install -m 0755 /tmp/docker/docker /usr/local/bin/docker && \
+        rm -rf /tmp/docker /tmp/docker.tgz
+
+# Docker Compose v2 plugin
+RUN ARCH=$(uname -m) && \
+        mkdir -p /usr/local/lib/docker/cli-plugins && \
+        curl -fsSL -o /usr/local/lib/docker/cli-plugins/docker-compose \
+            "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-${ARCH}" && \
+        chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
 # mise (pinned). Установщик скачивается с mise.run — версия фиксирована через MISE_VERSION.
 # Замечание: установщик исполняется через `sh`. Если боитесь supply-chain compromise — замените

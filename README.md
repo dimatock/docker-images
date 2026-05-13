@@ -10,6 +10,7 @@ Devcontainer-style Docker-образ для Go + Node.js разработки. �
 - **Shell**: `zsh` + `starship` (тема Gruvbox Rainbow)
 - **Утилиты**: `git`, `curl`, `ca-certificates`, `unzip`, `build-essential`, `fzf`, `ripgrep`, `fd-find`
 - **Git TUI**: `lazygit`
+- **Docker CLI** + Compose v2 plugin (без daemon; работает через bind-mount `/var/run/docker.sock` с хоста — см. `mounts` в `devcontainer.json`)
 - **sudo**: настроен `NOPASSWD` для пользователя `dev`. Удобно для dev, но **не использовать образ в shared / production окружениях**.
 
 ## Структура
