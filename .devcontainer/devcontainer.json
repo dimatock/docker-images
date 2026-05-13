@@ -8,5 +8,6 @@
   "containerUser": "dev",
   "updateRemoteUserUID": true,
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-  "shutdownAction": "stopContainer"
+  "shutdownAction": "stopContainer",
+  "postCreateCommand": "if [ -f .tool-versions ] || [ -f mise.toml ]; then /usr/local/bin/mise trust . && /usr/local/bin/mise install --yes; fi"
 }
