@@ -4,5 +4,12 @@
 CLAUDE.md
 README.md
 Makefile
-*.log
+node_modules
+vendor
+dist
+build
+.vscode
+.idea
 .DS_Store
+*.log
+*.swp

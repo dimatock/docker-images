@@ -1,5 +1,6 @@
 # Dev environment image: Ubuntu 26.04 LTS + mise-managed toolchain
-FROM ubuntu:26.04
+# Базовый образ закреплён по digest для воспроизводимости.
+FROM ubuntu:26.04@sha256:f3d28607ddd78734bb7f71f117f3c6706c666b8b76cbff7c9ff6e5718d46ff64
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
@@ -8,7 +9,12 @@ ENV DEBIAN_FRONTEND=noninteractive \
 ARG USER_NAME=dev
 ARG USER_UID=1000
 ARG USER_GID=1000
+
+# Pinned tool versions
+ARG NVIM_VERSION=0.12.2
 ARG LAZYGIT_VERSION=0.61.0
+ARG MISE_VERSION=v2026.5.6
+ARG STARSHIP_VERSION=v1.25.1
 
 # Базовые зависимости
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -27,7 +33,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Создание dev-пользователя.
 # Ubuntu 24.04+ содержит дефолтного 'ubuntu' с UID 1000 — резолвим конфликт.
-RUN if getent passwd ${USER_UID} >/dev/null; then \
+# Защита от USER_UID=0 (не сносим root).
+RUN if [ "${USER_UID}" = "0" ]; then \
+            echo "USER_UID=0 not allowed (would delete root)" >&2; exit 1; \
+        fi && \
+        if getent passwd ${USER_UID} >/dev/null; then \
             existing_user=$(getent passwd ${USER_UID} | cut -d: -f1); \
             userdel -r "$existing_user" 2>/dev/null || true; \
         fi && \
@@ -44,15 +54,15 @@ RUN if getent passwd ${USER_UID} >/dev/null; then \
         echo "${USER_NAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USER_NAME} && \
         chmod 0440 /etc/sudoers.d/${USER_NAME}
 
-# Neovim (stable, glibc-prebuilt)
+# Neovim (pinned)
 RUN OS=$(uname -s | tr '[:upper:]' '[:lower:]') && \
         ARCH=$(uname -m | sed 's/aarch64/arm64/') && \
         curl -fsSL -o /tmp/nvim.tar.gz \
-            "https://github.com/neovim/neovim/releases/download/stable/nvim-${OS}-${ARCH}.tar.gz" && \
+            "https://github.com/neovim/neovim/releases/download/v${NVIM_VERSION}/nvim-${OS}-${ARCH}.tar.gz" && \
         tar -xzf /tmp/nvim.tar.gz -C /usr/local --strip-components=1 && \
         rm -f /tmp/nvim.tar.gz
 
-# lazygit
+# lazygit (pinned)
 RUN OS=$(uname -s | tr '[:upper:]' '[:lower:]') && \
         ARCH=$(uname -m | sed 's/aarch64/arm64/') && \
         curl -fsSL -o /tmp/lazygit.tar.gz \
@@ -61,9 +71,13 @@ RUN OS=$(uname -s | tr '[:upper:]' '[:lower:]') && \
         chmod +x /usr/local/bin/lazygit && \
         rm -f /tmp/lazygit.tar.gz
 
-# mise + starship (system-wide)
-RUN curl -fsSL https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh && \
-        curl -fsSL https://starship.rs/install.sh | sh -s -- --yes
+# mise (pinned). Установщик скачивается с mise.run — версия фиксирована через MISE_VERSION.
+# Замечание: установщик исполняется через `sh`. Если боитесь supply-chain compromise — замените
+# на прямой download tarball с https://github.com/jdx/mise/releases и sha256 verify.
+RUN curl -fsSL https://mise.run | MISE_VERSION=${MISE_VERSION} MISE_INSTALL_PATH=/usr/local/bin/mise sh
+
+# starship (pinned). Установщик starship.rs/install.sh поддерживает флаг -v.
+RUN curl -fsSL https://starship.rs/install.sh | sh -s -- --yes -v ${STARSHIP_VERSION}
 
 USER ${USER_NAME}
 WORKDIR /home/${USER_NAME}
@@ -76,6 +90,7 @@ RUN printf '\n# mise + starship\neval "$(/usr/local/bin/mise activate zsh)"\neva
 
 # Пред-установка toolchain из .tool-versions (Go, Node.js, …)
 COPY --chown=${USER_NAME}:${USER_NAME} .tool-versions /home/${USER_NAME}/.tool-versions
-RUN /usr/local/bin/mise install --yes
+RUN /usr/local/bin/mise trust /home/${USER_NAME}/.tool-versions && \
+        /usr/local/bin/mise install --yes
 
 CMD ["/bin/zsh"]

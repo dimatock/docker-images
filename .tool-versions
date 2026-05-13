@@ -1,5 +1,6 @@
 # .tool-versions
-# See https://mise.jdx.dev/ for more information
+# See https://mise.jdx.dev/ for more information.
+# Используются каноничные имена плагинов mise (go, node), точные patch-версии.
 
-golang 1.26.2
-nodejs 22
+go 1.26.2
+node 22.22.2

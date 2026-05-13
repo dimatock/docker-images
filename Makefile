@@ -7,6 +7,9 @@ DOCKERFILE := .devcontainer/Dockerfile
 USER_UID ?= $(shell id -u)
 USER_GID ?= $(shell id -g)
 
+# Workspace path внутри контейнера согласован с devcontainer.json
+WORKSPACE := /workspaces/$(notdir $(CURDIR))
+
 .PHONY: all build run clean help
 
 all: build
@@ -23,7 +26,7 @@ build:
 
 # Запустить интерактивный shell в образе
 run:
-	docker run --rm -it -v $(CURDIR):/workspace -w /workspace $(IMAGE)
+	docker run --rm -it -v $(CURDIR):$(WORKSPACE) -w $(WORKSPACE) $(IMAGE)
 
 # Удалить образ
 clean:
@@ -34,13 +37,13 @@ help:
 	@echo ""
 	@echo "Команды:"
 	@echo "  make build   Собрать образ (по умолчанию: $(IMAGE))"
-	@echo "  make run     Запустить интерактивный shell в образе"
+	@echo "  make run     Запустить интерактивный shell в образе (mount: $(WORKSPACE))"
 	@echo "  make clean   Удалить образ"
 	@echo "  make help    Показать справку"
 	@echo ""
 	@echo "Переменные:"
 	@echo "  IMAGE=name:tag   Тэг образа (default: dev-env)"
-	@echo "  USER_UID=N       UID dev-пользователя (default: текущий)"
-	@echo "  USER_GID=N       GID dev-пользователя (default: текущий)"
+	@echo "  USER_UID=N       UID dev-пользователя (default: текущий = $(USER_UID))"
+	@echo "  USER_GID=N       GID dev-пользователя (default: текущий = $(USER_GID))"
 
 .DEFAULT_GOAL := help

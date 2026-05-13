@@ -8,8 +8,9 @@ Devcontainer-style Docker-образ для Go + Node.js разработки. �
 - **Toolchain**: управляется через [`mise`](https://mise.jdx.dev/) (см. `.tool-versions`) — Go, Node.js
 - **Editor**: последний стабильный `Neovim`
 - **Shell**: `zsh` + `starship` (тема Gruvbox Rainbow)
-- **Утилиты**: `git`, `curl`, `sudo`, `build-essential`, `fzf`, `ripgrep`, `fd-find`
+- **Утилиты**: `git`, `curl`, `ca-certificates`, `unzip`, `build-essential`, `fzf`, `ripgrep`, `fd-find`
 - **Git TUI**: `lazygit`
+- **sudo**: настроен `NOPASSWD` для пользователя `dev`. Удобно для dev, но **не использовать образ в shared / production окружениях**.
 
 ## Структура
 
