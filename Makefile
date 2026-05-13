@@ -1,56 +1,46 @@
-# Makefile для сборки Docker-образов среды разработки
+# Makefile для сборки Docker-образа dev-среды
 
-# ==============================================================================
-# Переменные
-# ?= позволяет переопределять переменные из командной строки
-# Пример: make build-alpine IMAGE_ALPINE=my-custom-env:latest
-# ==============================================================================
-IMAGE_UBUNTU ?= dev-env-ubuntu
-IMAGE_ALPINE ?= dev-env-alpine
+IMAGE ?= dev-env
+DOCKERFILE := .devcontainer/Dockerfile
 
-# ==============================================================================
-# Основные цели
-# ==============================================================================
+# Локальные UID/GID для bind-mount без permission проблем
+USER_UID ?= $(shell id -u)
+USER_GID ?= $(shell id -g)
 
-# Цель по умолчанию: собирает основной образ (Ubuntu)
-.PHONY: all
+.PHONY: all build run clean help
+
 all: build
 
-# Собрать основной образ (Ubuntu)
-.PHONY: build
-build: build-ubuntu
+# Собрать образ
+build:
+	@echo "==> Сборка $(IMAGE) (UID=$(USER_UID) GID=$(USER_GID))..."
+	docker build \
+		--build-arg USER_UID=$(USER_UID) \
+		--build-arg USER_GID=$(USER_GID) \
+		-t $(IMAGE) \
+		-f $(DOCKERFILE) .
+	@echo "==> Готово: $(IMAGE)"
 
-# Собрать образ на базе Ubuntu
-.PHONY: build-ubuntu
-build-ubuntu:
-	@echo "==> Сборка образа на базе Ubuntu: $(IMAGE_UBUNTU)..."
-	docker build -t $(IMAGE_UBUNTU) -f docker/Dockerfile .
-	@echo "==> Сборка $(IMAGE_UBUNTU) завершена."
+# Запустить интерактивный shell в образе
+run:
+	docker run --rm -it -v $(CURDIR):/workspace -w /workspace $(IMAGE)
 
-# Собрать образ на базе Alpine
-.PHONY: build-alpine
-build-alpine:
-	@echo "==> Сборка образа на базе Alpine: $(IMAGE_ALPINE)..."
-	docker build -t $(IMAGE_ALPINE) -f docker/Dockerfile.alpine .
-	@echo "==> Сборка $(IMAGE_ALPINE) завершена."
+# Удалить образ
+clean:
+	-docker rmi $(IMAGE)
 
-
-# ==============================================================================
-# Служебные цели
-# ==============================================================================
-
-# Показать справку
-.PHONY: help
 help:
-	@echo "Инструменты для сборки Docker-образов"
+	@echo "Сборка Docker-образа dev-среды"
 	@echo ""
-	@echo "Доступные команды:"
-	@echo "  make build         (или make) Собрать образ по умолчанию (Ubuntu)."
-	@echo "  make build-ubuntu  Собрать образ на базе Ubuntu."
-	@echo "  make build-alpine  Собрать образ на базе Alpine."
-	@echo "  make help          Показать это справочное сообщение."
+	@echo "Команды:"
+	@echo "  make build   Собрать образ (по умолчанию: $(IMAGE))"
+	@echo "  make run     Запустить интерактивный shell в образе"
+	@echo "  make clean   Удалить образ"
+	@echo "  make help    Показать справку"
 	@echo ""
-	@echo "Вы можете переопределить имена образов:"
-	@echo "  make build-alpine IMAGE_ALPINE=my-alpine:1.0"
+	@echo "Переменные:"
+	@echo "  IMAGE=name:tag   Тэг образа (default: dev-env)"
+	@echo "  USER_UID=N       UID dev-пользователя (default: текущий)"
+	@echo "  USER_GID=N       GID dev-пользователя (default: текущий)"
 
 .DEFAULT_GOAL := help

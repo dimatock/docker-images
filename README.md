@@ -1,50 +1,55 @@
 # Docker-based Development Environment
 
-This repository contains the configuration for a Docker-based development environment optimized for Go and Frontend (Node.js) development. It is designed to be used with `devpod`.
+Devcontainer-style Docker-образ для Go + Node.js разработки. Используется с [devpod](https://devpod.sh/), VS Code Dev Containers, JetBrains Dev Containers и совместимыми инструментами.
 
-## Features
+## Состав
 
-- **Base Image**: `Ubuntu 22.04` for stability and compatibility.
-- **Language Runtimes**: Managed via `mise` (`.tool-versions` file). Includes `golang` and `nodejs` by default.
-- **Editor**: Pre-installed latest stable version of `Neovim`.
-- **Shell**: `zsh` with `starship` prompt, configured with the "Gruvbox Rainbow" theme.
-- **Core Tools**: `git`, `curl`, `sudo`, `build-essential`, `fzf`, `ripgrep`, `fd-find`.
-- **Git TUI**: `lazygit` is included for a convenient terminal-based git workflow.
+- **Base**: `Ubuntu 26.04 LTS`
+- **Toolchain**: управляется через [`mise`](https://mise.jdx.dev/) (см. `.tool-versions`) — Go, Node.js
+- **Editor**: последний стабильный `Neovim`
+- **Shell**: `zsh` + `starship` (тема Gruvbox Rainbow)
+- **Утилиты**: `git`, `curl`, `sudo`, `build-essential`, `fzf`, `ripgrep`, `fd-find`
+- **Git TUI**: `lazygit`
 
-## File Structure
+## Структура
 
-- `docker/Dockerfile`: The main file for building the Docker image.
-- `docker/starship.toml`: The configuration file for the `starship` prompt theme.
-- `devcontainer.json`: Configuration for `devpod` and other dev container compatible tools. It tells them how to build and manage the environment.
-- `.tool-versions`: A `mise` configuration file to specify the versions of Go, Node.js, and any other tools you need.
-
-## Usage
-
-### 1. Build the Docker Image
-
-You can build the image manually using the following command. The `-t` flag tags the image with a name for easier reference.
-
-```bash
-docker build -t dev-environment -f docker/Dockerfile .
+```
+.
+├── .devcontainer/
+│   ├── devcontainer.json   # Конфиг для devpod / VS Code Dev Containers
+│   ├── Dockerfile          # Образ
+│   └── starship.toml       # Тема prompt
+├── .tool-versions          # Версии toolchain (читает mise)
+├── .dockerignore
+└── Makefile
 ```
 
-Alternatively, `devpod` will build the image automatically using the instructions from `devcontainer.json` if it doesn't find a pre-built image.
+## Использование
 
-### 2. Running with Devpod
+### С devpod / Dev Containers
 
-Simply point `devpod` to this repository. It will read the `devcontainer.json` file and set up the environment accordingly.
+Указать devpod на этот репозиторий — он прочитает `.devcontainer/devcontainer.json` и поднимет окружение автоматически.
 
-### 3. Inside the Container: First Steps
-
-Once the container is running and you are in the shell, you need to install the tool versions specified in the `.tool-versions` file.
+### Ручная сборка
 
 ```bash
-mise install
+make build              # собрать образ dev-env
+make run                # запустить интерактивный shell
+make clean              # удалить образ
+make help               # справка
 ```
-This command will read the `.tool-versions` file and download and install the specified versions of Go and Node.js. Thanks to the shell hooks we set up, `mise` will automatically use these versions in your project directory.
 
-## Customization
+Кастомные параметры:
 
-- **Change Tool Versions**: To change the version of Go or Node.js, simply edit the `.tool-versions` file and run `mise install` again inside the container.
-- **Add Tools**: You can add more tools managed by `mise` (like `python`, `ruby`, etc.) to the `.tool-versions` file.
-- **Modify the Environment**: To add more system-level packages or change the setup, edit the `docker/Dockerfile` and rebuild the image.
+```bash
+make build IMAGE=my-env:1.0 USER_UID=1001 USER_GID=1001
+```
+
+Toolchain из `.tool-versions` запекается в образ при сборке (Go, Node.js доступны сразу — без `mise install` после старта).
+
+## Кастомизация
+
+- **Версии toolchain**: правка `.tool-versions` → `make build`
+- **Доп. инструменты mise**: добавить в `.tool-versions` (python, ruby, …)
+- **Системные пакеты**: правка `.devcontainer/Dockerfile`
+- **Prompt**: правка `.devcontainer/starship.toml`
