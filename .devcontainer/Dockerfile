@@ -21,6 +21,12 @@ ARG COMPOSE_VERSION=v5.1.3
 # для воспроизводимости (по умолчанию main для удобства первой сборки).
 ARG LAZYVIM_STARTER_REF=main
 
+# Force IPv4 предпочтение для glibc getaddrinfo: на хостах без global IPv6
+# (только ULA) AAAA-ответы DNS приводят к 10s+ connect timeouts во всех инструментах
+# (curl, git, apt, wget). gai.conf precedence сдвигает IPv4-mapped адреса выше IPv6 —
+# getaddrinfo возвращает IPv4 первым, AAAA остаётся fallback'ом.
+RUN echo "precedence ::ffff:0:0/96 100" >> /etc/gai.conf
+
 # Базовые зависимости
 RUN apt-get update && apt-get install -y --no-install-recommends \
         sudo \
