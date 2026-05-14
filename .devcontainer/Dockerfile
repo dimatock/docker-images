@@ -61,10 +61,15 @@ RUN if [ "${USER_UID}" = "0" ]; then \
         echo "${USER_NAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USER_NAME} && \
         chmod 0440 /etc/sudoers.d/${USER_NAME}
 
+# Общие флаги curl для download шагов: таймауты + retry.
+# Без --max-time curl зависает навсегда при stalled CDN (наблюдали 2+ мин hang
+# на GitHub releases). --retry-all-errors покрывает TLS/handshake фейлы тоже.
+ARG CURL_DL_FLAGS="-fsSL --connect-timeout 10 --max-time 300 --retry 5 --retry-delay 3 --retry-all-errors"
+
 # Neovim (pinned)
 RUN OS=$(uname -s | tr '[:upper:]' '[:lower:]') && \
         ARCH=$(uname -m | sed 's/aarch64/arm64/') && \
-        curl -fsSL -o /tmp/nvim.tar.gz \
+        curl ${CURL_DL_FLAGS} -o /tmp/nvim.tar.gz \
             "https://github.com/neovim/neovim/releases/download/v${NVIM_VERSION}/nvim-${OS}-${ARCH}.tar.gz" && \
         tar -xzf /tmp/nvim.tar.gz -C /usr/local --strip-components=1 && \
         rm -f /tmp/nvim.tar.gz
@@ -72,7 +77,7 @@ RUN OS=$(uname -s | tr '[:upper:]' '[:lower:]') && \
 # lazygit (pinned)
 RUN OS=$(uname -s | tr '[:upper:]' '[:lower:]') && \
         ARCH=$(uname -m | sed 's/aarch64/arm64/') && \
-        curl -fsSL -o /tmp/lazygit.tar.gz \
+        curl ${CURL_DL_FLAGS} -o /tmp/lazygit.tar.gz \
             "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_${OS}_${ARCH}.tar.gz" && \
         tar -xzf /tmp/lazygit.tar.gz -C /usr/local/bin lazygit && \
         chmod +x /usr/local/bin/lazygit && \
@@ -81,7 +86,7 @@ RUN OS=$(uname -s | tr '[:upper:]' '[:lower:]') && \
 # Docker CLI (static binary, БЕЗ daemon — daemon должен быть на хосте,
 # /var/run/docker.sock пробрасывается через devcontainer.json mounts).
 RUN ARCH=$(uname -m) && \
-        curl -fsSL -o /tmp/docker.tgz \
+        curl ${CURL_DL_FLAGS} -o /tmp/docker.tgz \
             "https://download.docker.com/linux/static/stable/${ARCH}/docker-${DOCKER_VERSION}.tgz" && \
         tar -xzf /tmp/docker.tgz -C /tmp && \
         install -m 0755 /tmp/docker/docker /usr/local/bin/docker && \
@@ -90,7 +95,7 @@ RUN ARCH=$(uname -m) && \
 # Docker Compose v2 plugin + symlink для legacy `docker-compose` вызовов
 RUN ARCH=$(uname -m) && \
         mkdir -p /usr/local/lib/docker/cli-plugins && \
-        curl -fsSL -o /usr/local/lib/docker/cli-plugins/docker-compose \
+        curl ${CURL_DL_FLAGS} -o /usr/local/lib/docker/cli-plugins/docker-compose \
             "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-${ARCH}" && \
         chmod +x /usr/local/lib/docker/cli-plugins/docker-compose && \
         ln -sf /usr/local/lib/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
