@@ -61,10 +61,12 @@ RUN if [ "${USER_UID}" = "0" ]; then \
         echo "${USER_NAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USER_NAME} && \
         chmod 0440 /etc/sudoers.d/${USER_NAME}
 
-# Общие флаги curl для download шагов: таймауты + retry.
+# Общие флаги curl для download шагов: таймауты + retry + force IPv4.
 # Без --max-time curl зависает навсегда при stalled CDN (наблюдали 2+ мин hang
 # на GitHub releases). --retry-all-errors покрывает TLS/handshake фейлы тоже.
-ARG CURL_DL_FLAGS="-fsSL --connect-timeout 10 --max-time 300 --retry 5 --retry-delay 3 --retry-all-errors"
+# -4: hosts без global IPv6 связности (только ULA) ловят 10s connect timeout
+# на github.com через Happy Eyeballs — force IPv4 убирает эту задержку.
+ARG CURL_DL_FLAGS="-4 -fsSL --connect-timeout 10 --max-time 300 --retry 5 --retry-delay 3 --retry-all-errors"
 
 # Neovim (pinned)
 RUN OS=$(uname -s | tr '[:upper:]' '[:lower:]') && \
