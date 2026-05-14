@@ -30,6 +30,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         fzf \
         ripgrep \
         fd-find \
+        jq \
+        kitty-terminfo \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
