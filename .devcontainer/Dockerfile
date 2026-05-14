@@ -17,6 +17,9 @@ ARG MISE_VERSION=v2026.5.6
 ARG STARSHIP_VERSION=v1.25.1
 ARG DOCKER_VERSION=29.4.2
 ARG COMPOSE_VERSION=v5.1.3
+# LazyVim starter ref — рекомендуется пиновать на конкретный commit SHA
+# для воспроизводимости (по умолчанию main для удобства первой сборки).
+ARG LAZYVIM_STARTER_REF=main
 
 # Базовые зависимости
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -108,6 +111,20 @@ COPY --chown=${USER_NAME}:${USER_NAME} .devcontainer/starship.toml /home/${USER_
 
 RUN printf '\n# mise + starship\neval "$(/usr/local/bin/mise activate zsh)"\neval "$(starship init zsh)"\n' \
         >> /home/${USER_NAME}/.zshrc
+
+# LazyVim: клонируем starter, удаляем .git (чтоб пользователь мог инициализировать свой repo).
+RUN git clone --depth=1 --branch "${LAZYVIM_STARTER_REF}" \
+            https://github.com/LazyVim/starter /home/${USER_NAME}/.config/nvim && \
+        rm -rf /home/${USER_NAME}/.config/nvim/.git
+
+# Кастомные plugin specs (oil.nvim и т.д.) — кладутся до Lazy sync, чтобы плагины
+# скачались на этапе build, а не при первом запуске nvim в контейнере.
+COPY --chown=${USER_NAME}:${USER_NAME} .devcontainer/nvim-plugins/ \
+        /home/${USER_NAME}/.config/nvim/lua/plugins/
+
+# Прогрев плагинов: `Lazy! sync` синхронный (bang блокирует до завершения).
+# Без прогрева первый запуск nvim тратит минуты на git clone всех плагинов.
+RUN nvim --headless "+Lazy! sync" +qa
 
 # Пред-установка toolchain из .tool-versions (Go, Node.js, …)
 COPY --chown=${USER_NAME}:${USER_NAME} .tool-versions /home/${USER_NAME}/.tool-versions
